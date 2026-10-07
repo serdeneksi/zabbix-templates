@@ -1,0 +1,61 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: cb0888acc0434db7a49a67941eb4657c
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: 22e87f7d86694a5fbe0104546b1be0c1
+      template: 'HPE Networking Instant On 1930 CPU Utilization'
+      name: 'HPE Networking Instant On 1930 CPU Utilization'
+      description: |
+        HPE Networking Instant On 1930 serisi (ör. JL684B) icin CPU/Memory
+        izleme sablonu. SNMP arayuzu proxy uzerinden zaten calisiyor.
+        
+        CPU Utilization: rlCpuUtilDuringLast5Minutes (RADLAN-turevi
+        HPE-rndMng-MIB, OID .1.3.6.1.4.1.11.2.1.9.0). Bu MIB dalinin tam
+        nesne listesi dogrulandi - CPU icin 4 nesne var (Enable,
+        LastSecond, LastMinute, Last5Minutes), aktif olan bu.
+        
+        Memory Utilization: Ayni MIB dalinda memory'e karsilik gelen HICBIR
+        nesne yok (39 nesnelik tam liste kontrol edildi). Yani bu cihaz
+        ailesinde SNMP ile memory okumak icin bir OID donanimda/yazilimda
+        mevcut degil - config/erisim sorunu degil. Item bu yuzden pasif
+        birakildi; gercek bir OID ortaya cikarsa (firmware guncellemesiyle
+        vs.) buraya eklenir.
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 49af663cd76e4dd48fb49a7660ff528a
+          name: 'CPU Utilization'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.11.2.1.9.0
+          key: cpu.utilization
+          delay: 5m
+          history: 7d
+          value_type: FLOAT
+          units: '%'
+          description: |
+            HPE-rndMng-MIB::rlCpuUtilDuringLast5Minutes
+            Son 5 dakikalik ortalama CPU kullanimi (%).
+          tags:
+            - tag: component
+              value: cpu
+        - uuid: e82cd740f4bb4111975bf2b0452d021e
+          name: 'Memory Utilization'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.3.0
+          key: memory.utilization
+          delay: 5m
+          history: 7d
+          value_type: FLOAT
+          status: DISABLED
+          units: '%'
+          description: |
+            Bu cihaz ailesinin SNMP MIB'inde memory nesnesi yok, dogrulandi.
+            OID alani su an sysUpTime (1.3.6.1.2.1.1.3.0) - bilerek
+            anlamsiz bir deger, yanlislikla enable edilip CPU ile
+            karisan yanlis veri gormeyin diye. Gercek OID bulununca
+            guncellenip enable edilecek.
+          tags:
+            - tag: component
+              value: memory
