@@ -1,0 +1,1434 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 5fac42c63caf410380ed4f72f7c922a3
+    name: Templates/SAN
+  templates:
+  - uuid: 42afe9f454fd4aaa8afadb3991556051
+    template: QNAP NAS Storage by SNMP
+    name: QNAP NAS Storage by SNMP
+    description: |-
+      QNAP NAS (QTS / QuTS hero) fiziksel depolama izleme sablonu. SNMP v2c/v3. Kaynak: NAS-MIB (enterprises.24681).
+      Polling araliklari {$QNAP.POLL.*} makrolariyla ayarlanir.
+    groups:
+    - name: Templates/SAN
+    items:
+    - uuid: a5ca60c58bf14bdd82ed9389897d47c1
+      name: 'System: Model'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.12.0
+      key: qnap.system.model
+      delay: 1h
+      history: 31d
+      trends: '0'
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 1d
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: d8a3a1f5ac5b474982cfb4cb4d84a745
+      name: 'System: Hostname'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.13.0
+      key: qnap.system.hostname
+      delay: 1h
+      history: 31d
+      trends: '0'
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 1d
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 450d9be0c0a14cf18c51ba81f0baf30d
+      name: 'System: Uptime'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.4.0
+      key: qnap.system.uptime
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      units: uptime
+      description: sysUptimeEX (TimeTicks, 1/100 sn) -> saniye
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: system
+      triggers:
+      - uuid: 6e7af96f46e94bd788cae5b53b981dbc
+        expression: nodata(/QNAP NAS Storage by SNMP/qnap.system.uptime,5m)=1
+        name: 'System: No SNMP data for 5m'
+        priority: HIGH
+        description: NAS SNMP uzerinden yanit vermiyor (SNMP ayarlari, ag veya cihaz kapali).
+        tags:
+        - tag: component
+          value: system
+      - uuid: d770fe64a46746338bf3a802ef82ade2
+        expression: last(/QNAP NAS Storage by SNMP/qnap.system.uptime)<10m
+        name: 'System: Restarted (uptime < 10m)'
+        priority: INFO
+        description: Cihaz yakin zamanda yeniden basladi.
+        manual_close: 'YES'
+        tags:
+        - tag: component
+          value: system
+    - uuid: 5d04268848f745b68ae6cacbd4d16b01
+      name: 'System: CPU utilization'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.1.0
+      key: qnap.cpu.util
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      units: '%'
+      description: Bazi firmware surumleri "5.00 %" gibi metin dondurur; regex ile sayiya cevrilir.
+      preprocessing:
+      - type: REGEX
+        parameters:
+        - ([0-9]+(?:\.[0-9]+)?)
+        - \1
+      tags:
+      - tag: component
+        value: cpu
+      triggers:
+      - uuid: a90fbb238ed9441f882a5f7a2c86c53d
+        expression: avg(/QNAP NAS Storage by SNMP/qnap.cpu.util,5m)>{$QNAP.CPU.UTIL.WARN}
+        name: 'System: High CPU utilization (>{$QNAP.CPU.UTIL.WARN}% for 5m)'
+        priority: WARNING
+        tags:
+        - tag: component
+          value: cpu
+    - uuid: c6a6b276c65b45b28dcc26728d8a80d5
+      name: 'System: CPU temperature'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.5.0
+      key: qnap.cpu.temp
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      units: °C
+      tags:
+      - tag: component
+        value: cpu
+      triggers:
+      - uuid: be80e66c8edb408e8c25e4b05919b646
+        expression: last(/QNAP NAS Storage by SNMP/qnap.cpu.temp)>={$QNAP.CPU.TEMP.WARN} and last(/QNAP NAS Storage by SNMP/qnap.cpu.temp)<{$QNAP.CPU.TEMP.CRIT}
+        name: 'System: CPU temperature is high (>={$QNAP.CPU.TEMP.WARN}°C)'
+        priority: WARNING
+        tags:
+        - tag: component
+          value: environment
+      - uuid: 4ef286e76c264bfd8fabfbbe62fd08ea
+        expression: last(/QNAP NAS Storage by SNMP/qnap.cpu.temp)>={$QNAP.CPU.TEMP.CRIT}
+        name: 'System: CPU temperature is critical (>={$QNAP.CPU.TEMP.CRIT}°C)'
+        priority: HIGH
+        tags:
+        - tag: component
+          value: environment
+    - uuid: 4f05db17f56b43c087725ed8ede504b3
+      name: 'System: Temperature'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.6.0
+      key: qnap.system.temp
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      units: °C
+      tags:
+      - tag: component
+        value: environment
+      triggers:
+      - uuid: 2413826756794c558a3c277b8093e910
+        expression: last(/QNAP NAS Storage by SNMP/qnap.system.temp)>={$QNAP.SYS.TEMP.WARN} and last(/QNAP NAS Storage by SNMP/qnap.system.temp)<{$QNAP.SYS.TEMP.CRIT}
+        name: 'System: Temperature is high (>={$QNAP.SYS.TEMP.WARN}°C)'
+        priority: WARNING
+        tags:
+        - tag: component
+          value: environment
+      - uuid: c3f1c65e318f4d7d8c32e47feab05b5d
+        expression: last(/QNAP NAS Storage by SNMP/qnap.system.temp)>={$QNAP.SYS.TEMP.CRIT}
+        name: 'System: Temperature is critical (>={$QNAP.SYS.TEMP.CRIT}°C)'
+        priority: HIGH
+        tags:
+        - tag: component
+          value: environment
+    - uuid: 7de726fa85dc45f0850e1f9722dd8fd5
+      name: 'Memory: Total'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.2.0
+      key: qnap.mem.total
+      delay: '{$QNAP.POLL.SLOW}'
+      history: 31d
+      trends: 365d
+      value_type: UNSIGNED
+      units: B
+      tags:
+      - tag: component
+        value: memory
+    - uuid: 6864787c43594caf88e6826fb00097e6
+      name: 'Memory: Free'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.3.0
+      key: qnap.mem.free
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      value_type: UNSIGNED
+      units: B
+      tags:
+      - tag: component
+        value: memory
+    - uuid: f75c6219fce446a089c05cd6d0d9c618
+      name: 'Memory: Used'
+      type: CALCULATED
+      key: qnap.mem.used
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      params: last(//qnap.mem.total)-last(//qnap.mem.free)
+      tags:
+      - tag: component
+        value: memory
+      units: B
+    - uuid: c4504d8ea4644d2b854e4e37f86b208f
+      name: 'Memory: Utilization'
+      type: CALCULATED
+      key: qnap.mem.pused
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      params: 100*(1-last(//qnap.mem.free)/last(//qnap.mem.total))
+      tags:
+      - tag: component
+        value: memory
+      units: '%'
+      triggers:
+      - uuid: 44ef1dbace164d418215426cc60036ce
+        expression: min(/QNAP NAS Storage by SNMP/qnap.mem.pused,5m)>{$QNAP.MEM.PUSED.WARN}
+        name: 'System: High memory utilization (>{$QNAP.MEM.PUSED.WARN}% for 5m)'
+        priority: WARNING
+        tags:
+        - tag: component
+          value: memory
+    - uuid: 9c817b50e0764e64861ad8ddc4fa45d7
+      name: 'Memory: Free (percent)'
+      type: CALCULATED
+      key: qnap.mem.pfree
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      params: 100*last(//qnap.mem.free)/last(//qnap.mem.total)
+      tags:
+      - tag: component
+        value: memory
+      units: '%'
+    - uuid: 3e1bddf61774499e8709beb20d85a376
+      name: 'Storage: Number of physical disks'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.5.1.0
+      key: qnap.disk.count
+      delay: '{$QNAP.POLL.NORMAL}'
+      history: 31d
+      trends: 365d
+      value_type: UNSIGNED
+      tags:
+      - tag: component
+        value: disk
+      triggers:
+      - uuid: a6415efbd30f478a8ed02fc5400f1675
+        expression: change(/QNAP NAS Storage by SNMP/qnap.disk.count)<0
+        name: 'Storage: Number of physical disks decreased'
+        priority: HIGH
+        description: Disk sayisi dustu. Kontrol sonrasi elle kapatin.
+        manual_close: 'YES'
+        tags:
+        - tag: component
+          value: disk
+    - uuid: acad220145854b3180543d670395f9b2
+      name: 'Storage: Number of RAID groups'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.2.1.1.0
+      key: qnap.raid.count
+      delay: '{$QNAP.POLL.SLOW}'
+      history: 31d
+      trends: 365d
+      value_type: UNSIGNED
+      tags:
+      - tag: component
+        value: raid
+    - uuid: 7eeebfa89a0343e588b5763f201449ea
+      name: 'Storage: Number of volumes'
+      type: SNMP_AGENT
+      snmp_oid: 1.3.6.1.4.1.24681.1.3.16.0
+      key: qnap.volume.count
+      delay: '{$QNAP.POLL.SLOW}'
+      history: 31d
+      trends: 365d
+      value_type: UNSIGNED
+      tags:
+      - tag: component
+        value: volume
+    - uuid: 45a88c9b553a43ba8cd2ede92948531d
+      name: 'Storage: Total capacity (all volumes)'
+      type: CALCULATED
+      key: qnap.storage.total
+      delay: '{$QNAP.POLL.NORMAL}'
+      history: 31d
+      trends: 365d
+      params: sum(last_foreach(//qnap.volume.total[*]))
+      tags:
+      - tag: component
+        value: volume
+      units: B
+    - uuid: 37872e255e61447c834f2e743423eaf5
+      name: 'Storage: Free space (all volumes)'
+      type: CALCULATED
+      key: qnap.storage.free
+      delay: '{$QNAP.POLL.NORMAL}'
+      history: 31d
+      trends: 365d
+      params: sum(last_foreach(//qnap.volume.free[*]))
+      tags:
+      - tag: component
+        value: volume
+      units: B
+    - uuid: 756166d9bdf0401c8dd6870e003fc9ab
+      name: 'Storage: Used space (all volumes)'
+      type: CALCULATED
+      key: qnap.storage.used
+      delay: '{$QNAP.POLL.NORMAL}'
+      history: 31d
+      trends: 365d
+      params: last(//qnap.storage.total)-last(//qnap.storage.free)
+      tags:
+      - tag: component
+        value: volume
+      units: B
+    - uuid: 75de98ebe7934adc85bdf919d9760a57
+      name: 'Storage: Space utilization (all volumes)'
+      type: CALCULATED
+      key: qnap.storage.pused
+      delay: '{$QNAP.POLL.NORMAL}'
+      history: 31d
+      trends: 365d
+      params: 100*last(//qnap.storage.used)/last(//qnap.storage.total)
+      tags:
+      - tag: component
+        value: volume
+      units: '%'
+      triggers:
+      - uuid: fbe362be06a4497e8ada672fc7f6385f
+        expression: last(/QNAP NAS Storage by SNMP/qnap.storage.pused)>={$QNAP.VOLUME.PUSED.WARN} and last(/QNAP NAS Storage by SNMP/qnap.storage.pused)<{$QNAP.VOLUME.PUSED.CRIT}
+        name: 'Storage: Total space is low (>={$QNAP.VOLUME.PUSED.WARN}%)'
+        priority: WARNING
+        tags:
+        - tag: component
+          value: volume
+      - uuid: 92c44ba0be7d42328ac60d0695de6cab
+        expression: last(/QNAP NAS Storage by SNMP/qnap.storage.pused)>={$QNAP.VOLUME.PUSED.CRIT}
+        name: 'Storage: Total space is critically low (>={$QNAP.VOLUME.PUSED.CRIT}%)'
+        priority: HIGH
+        tags:
+        - tag: component
+          value: volume
+    - uuid: d08470cd817c4a7a849a80f38cab2499
+      name: 'Storage: Free space percent (all volumes)'
+      type: CALCULATED
+      key: qnap.storage.pfree
+      delay: '{$QNAP.POLL.NORMAL}'
+      history: 31d
+      trends: 365d
+      params: 100*last(//qnap.storage.free)/last(//qnap.storage.total)
+      tags:
+      - tag: component
+        value: volume
+      units: '%'
+    - uuid: 67da628b57ef4c3a82c94700fbe58192
+      name: 'Storage: Components in critical state'
+      type: CALCULATED
+      key: qnap.health.crit
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      params: count(last_foreach(//qnap.disk.health[*]),"eq",2)+count(last_foreach(//qnap.raid.health[*]),"eq",2)+count(last_foreach(//qnap.volume.health[*]),"eq",2)+count(last_foreach(//qnap.pool.health[*]),"eq",2)+count(last_foreach(//qnap.slot.health[*]),"eq",2)+count(last_foreach(//qnap.fan.status[*]),"ne",0)+count(last_foreach(//qnap.psu.status[*]),"ne",0)
+      tags:
+      - tag: component
+        value: health
+      description: Kritik durumdaki disk/slot/RAID/volume/pool/fan/PSU sayisi.
+    - uuid: a04b2591610a4e89804783ce9f7a58b5
+      name: 'Storage: Components in warning state'
+      type: CALCULATED
+      key: qnap.health.warn
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      params: count(last_foreach(//qnap.disk.health[*]),"eq",1)+count(last_foreach(//qnap.raid.health[*]),"eq",1)+count(last_foreach(//qnap.pool.health[*]),"eq",1)
+      tags:
+      - tag: component
+        value: health
+    - uuid: 06128f1ff3b6477b84218e8d7196d714
+      name: 'Storage: Overall health'
+      type: CALCULATED
+      key: qnap.health.overall
+      delay: '{$QNAP.POLL.FAST}'
+      history: 31d
+      trends: 365d
+      params: (last(//qnap.health.crit)>0)*2+(last(//qnap.health.crit)=0)*(last(//qnap.health.warn)>0)
+      tags:
+      - tag: component
+        value: health
+      valuemap:
+        name: QNAP health
+      description: 0=OK, 1=Warning, 2=Critical. Diskler, RAID, volume, pool, fan ve PSU durumlarindan turetilir.
+      triggers:
+      - uuid: d8099e907a4d4aba8921b91a5604d880
+        expression: last(/QNAP NAS Storage by SNMP/qnap.health.overall)=2
+        name: 'Storage: Overall health is critical'
+        priority: HIGH
+        description: Bir veya daha fazla bilesen kritik durumda. Ayrintilar icin ilgili disk/RAID/volume/pool/fan/PSU tetikleyicilerine bakin.
+        tags:
+        - tag: component
+          value: health
+    discovery_rules:
+    - uuid: bdffc896079649c08c6c9f37ef8750eb
+      name: Physical disk discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#DISKMODEL},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.8,{#DISKCAP},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.9]
+      key: qnap.disk.discovery
+      delay: 30m
+      lifetime: 7d
+      description: Tum fiziksel diskler (NAS-MIB diskTable).
+      item_prototypes:
+      - uuid: 5e968c1a8af24050820f9849dabc8f34
+        name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): Status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.4.{#SNMPINDEX}
+        key: qnap.disk.summary[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: '0'
+        value_type: CHAR
+        description: 'NAS-MIB diskSummary: Good / Warning / Abnormal'
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1h
+        tags:
+        - tag: component
+          value: disk
+        trigger_prototypes:
+        - uuid: 2a9031d4991542de8670de2c98d28185
+          expression: find(/QNAP NAS Storage by SNMP/qnap.disk.summary[{#SNMPINDEX}],,"iregexp","^(good|warning)")=0
+          name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): Status is abnormal'
+          priority: HIGH
+          description: Disk durumu "Good" veya "Warning" disinda.
+          tags:
+          - tag: component
+            value: disk
+        - uuid: a48e9cb0e36b4b0683fbfa730e77a0b9
+          expression: find(/QNAP NAS Storage by SNMP/qnap.disk.summary[{#SNMPINDEX}],,"iregexp","^warning")=1
+          name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): Status is warning'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: disk
+      - uuid: 4b7d3b1024214054858d8a6c8c6e3945
+        name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): SMART status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.5.{#SNMPINDEX}
+        key: qnap.disk.smart[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        valuemap:
+          name: QNAP SMART status
+        tags:
+        - tag: component
+          value: disk
+        trigger_prototypes:
+        - uuid: 333dd5233941485b849ace5acd405afc
+          expression: last(/QNAP NAS Storage by SNMP/qnap.disk.smart[{#SNMPINDEX}])=2 or last(/QNAP NAS Storage by SNMP/qnap.disk.smart[{#SNMPINDEX}])=-1
+          name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): SMART abnormal/error'
+          priority: HIGH
+          description: SMART abnormal(2) veya error(-1).
+          tags:
+          - tag: component
+            value: disk
+        - uuid: f0218fdf4463457b87f239e07d661d72
+          expression: last(/QNAP NAS Storage by SNMP/qnap.disk.smart[{#SNMPINDEX}])=1
+          name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): SMART warning'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: disk
+      - uuid: bff28c9891ad4b838176396489acdcc9
+        name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): Temperature'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.6.{#SNMPINDEX}
+        key: qnap.disk.temp[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        units: °C
+        tags:
+        - tag: component
+          value: disk
+        trigger_prototypes:
+        - uuid: c07f30c62d7d460589d0ebaaa9382faa
+          expression: last(/QNAP NAS Storage by SNMP/qnap.disk.temp[{#SNMPINDEX}])>={$QNAP.DISK.TEMP.WARN} and last(/QNAP NAS Storage by SNMP/qnap.disk.temp[{#SNMPINDEX}])<{$QNAP.DISK.TEMP.CRIT}
+          name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): Temperature is high (>={$QNAP.DISK.TEMP.WARN}°C)'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: disk
+        - uuid: 7f05b1e94b8b49a58fdae493b99575c9
+          expression: last(/QNAP NAS Storage by SNMP/qnap.disk.temp[{#SNMPINDEX}])>={$QNAP.DISK.TEMP.CRIT}
+          name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): Temperature is critical (>={$QNAP.DISK.TEMP.CRIT}°C)'
+          priority: HIGH
+          tags:
+          - tag: component
+            value: disk
+      - uuid: ab4eb97819844fb682c2840ed03a7330
+        name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): Capacity'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.9.{#SNMPINDEX}
+        key: qnap.disk.capacity[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.SLOW}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: disk
+      - uuid: ecfdea0230fe4f8a8574c54c8a09986c
+        name: 'Disk {#SNMPINDEX} ({#DISKMODEL}): Health'
+        type: CALCULATED
+        key: qnap.disk.health[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        params: 2*(((1-find(//qnap.disk.summary[{#SNMPINDEX}],,"iregexp","^(good|warning)"))+(last(//qnap.disk.smart[{#SNMPINDEX}])=2)+(last(//qnap.disk.smart[{#SNMPINDEX}])=-1))>0)+(1-(((1-find(//qnap.disk.summary[{#SNMPINDEX}],,"iregexp","^(good|warning)"))+(last(//qnap.disk.smart[{#SNMPINDEX}])=2)+(last(//qnap.disk.smart[{#SNMPINDEX}])=-1))>0))*((find(//qnap.disk.summary[{#SNMPINDEX}],,"iregexp","^warning")+(last(//qnap.disk.smart[{#SNMPINDEX}])=1))>0)
+        tags:
+        - tag: component
+          value: disk
+        valuemap:
+          name: QNAP health
+        description: 0=OK, 1=Warning, 2=Critical (durum metni + SMART).
+    - uuid: 33cf0b088cc14f2e818269e2567f1ff5
+      name: Disk slot discovery (online/offline)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#SLOTNAME},1.3.6.1.4.1.24681.1.3.11.1.2,{#SLOTMODEL},1.3.6.1.4.1.24681.1.3.11.1.5]
+      key: qnap.slot.discovery
+      delay: 30m
+      lifetime: 7d
+      description: hdTableEX slotlarini kesfeder. Disk online/offline durumu icin kullanilir.
+      item_prototypes:
+      - uuid: 51ebf0b04677403880336b99cfc9c1d7
+        name: 'Slot {#SLOTNAME} ({#SLOTMODEL}): Disk state'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.3.11.1.4.{#SNMPINDEX}
+        key: qnap.slot.status[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        description: 0=Ready (online), -4=Unknown, -5=No disk, -6=Invalid, -9=Read/Write error
+        valuemap:
+          name: QNAP disk slot status
+        tags:
+        - tag: component
+          value: disk
+        trigger_prototypes:
+        - uuid: 6e36b07d93df4fc08bfd64f34f2d7f0b
+          expression: last(/QNAP NAS Storage by SNMP/qnap.slot.status[{#SNMPINDEX}])<0 and last(/QNAP NAS Storage by SNMP/qnap.slot.status[{#SNMPINDEX}])<>-5
+          name: 'Slot {#SLOTNAME} ({#SLOTMODEL}): Disk is offline / not ready'
+          priority: HIGH
+          description: Disk durumu Ready degil (R/W error, invalid veya unknown).
+          tags:
+          - tag: component
+            value: disk
+        - uuid: 8a2b95cedf544a56849c45ec7416d098
+          expression: last(/QNAP NAS Storage by SNMP/qnap.slot.status[{#SNMPINDEX}])=-5 and last(/QNAP NAS Storage by SNMP/qnap.slot.status[{#SNMPINDEX}],#2)=0
+          name: 'Slot {#SLOTNAME} ({#SLOTMODEL}): Disk removed'
+          priority: AVERAGE
+          recovery_mode: NONE
+          description: Disk slottan cikarilmis (Ready -> No disk). Kontrol sonrasi elle kapatin.
+          manual_close: 'YES'
+          tags:
+          - tag: component
+            value: disk
+      - uuid: e9e35ff77ef2456a832a011237574e06
+        name: 'Slot {#SLOTNAME} ({#SLOTMODEL}): SMART info'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.3.11.1.7.{#SNMPINDEX}
+        key: qnap.slot.smartinfo[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: '0'
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1h
+        tags:
+        - tag: component
+          value: disk
+      - uuid: 001546d21c7240258ef4db2f40ea285e
+        name: 'Slot {#SLOTNAME} ({#SLOTMODEL}): Capacity'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.3.11.1.6.{#SNMPINDEX}
+        key: qnap.slot.capacity[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.SLOW}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: disk
+      - uuid: 1bf393f735d34f8c817ae583dd974cae
+        name: 'Slot {#SLOTNAME} ({#SLOTMODEL}): Health'
+        type: CALCULATED
+        key: qnap.slot.health[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        params: (last(//qnap.slot.status[{#SNMPINDEX}])<0 and last(//qnap.slot.status[{#SNMPINDEX}])<>-5)*2
+        tags:
+        - tag: component
+          value: disk
+        valuemap:
+          name: QNAP health
+        description: Bos slot (-5) saglikli sayilir.
+    - uuid: 162bab56c23d4e6d89d03a63aca20617
+      name: Enclosure discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#ENCNAME},1.3.6.1.4.1.24681.1.4.1.1.1.1.1.2.1.6,{#ENCMODEL},1.3.6.1.4.1.24681.1.4.1.1.1.1.1.2.1.3]
+      key: qnap.enclosure.discovery
+      delay: 30m
+      lifetime: 7d
+      description: Ana kasa ve genisleme uniteleri.
+      item_prototypes:
+      - uuid: 441343a7c2d14cd780b9ecfb1f78de9a
+        name: 'Enclosure {#SNMPINDEX} ({#ENCNAME}): Temperature'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.1.2.1.7.{#SNMPINDEX}
+        key: qnap.enclosure.temp[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        units: °C
+        tags:
+        - tag: component
+          value: environment
+        trigger_prototypes:
+        - uuid: 5559563aab544c208ade099e2321b785
+          expression: last(/QNAP NAS Storage by SNMP/qnap.enclosure.temp[{#SNMPINDEX}])>={$QNAP.SYS.TEMP.WARN} and last(/QNAP NAS Storage by SNMP/qnap.enclosure.temp[{#SNMPINDEX}])<{$QNAP.SYS.TEMP.CRIT}
+          name: 'Enclosure {#SNMPINDEX} ({#ENCNAME}): Temperature is high (>={$QNAP.SYS.TEMP.WARN}°C)'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: environment
+        - uuid: f9f8b854960b418f83e8ffa1fac9e36c
+          expression: last(/QNAP NAS Storage by SNMP/qnap.enclosure.temp[{#SNMPINDEX}])>={$QNAP.SYS.TEMP.CRIT}
+          name: 'Enclosure {#SNMPINDEX} ({#ENCNAME}): Temperature is critical (>={$QNAP.SYS.TEMP.CRIT}°C)'
+          priority: HIGH
+          tags:
+          - tag: component
+            value: environment
+    - uuid: 139c1a6be0c146998aeeaecccbc994a0
+      name: RAID group discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#RAIDLEVEL},1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.7]
+      key: qnap.raid.discovery
+      delay: 30m
+      lifetime: 7d
+      description: RAID gruplari.
+      item_prototypes:
+      - uuid: 3d7507546eb24c7b8e87ea3438249b64
+        name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.5.{#SNMPINDEX}
+        key: qnap.raid.status[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: '0'
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1h
+        tags:
+        - tag: component
+          value: raid
+        trigger_prototypes:
+        - uuid: 6c704896c4dc48338bbe5ca7c39d91aa
+          expression: find(/QNAP NAS Storage by SNMP/qnap.raid.status[{#SNMPINDEX}],,"iregexp","{$QNAP.STATUS.BAD.MATCHES}")=1
+          name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Status is degraded/failed'
+          priority: HIGH
+          description: Degraded / failed / inactive / read-only vb. Gercek metinleri snmpwalk ile dogrulayin.
+          tags:
+          - tag: component
+            value: raid
+        - uuid: b3f19d81055d48af8afb8561b6705a2f
+          expression: find(/QNAP NAS Storage by SNMP/qnap.raid.status[{#SNMPINDEX}],,"iregexp","{$QNAP.STATUS.WARN.MATCHES}")=1
+          name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Rebuild/sync in progress'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: raid
+      - uuid: 479e72b3064341168a8765098d7cfa90
+        name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Total capacity'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.3.{#SNMPINDEX}
+        key: qnap.raid.total[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.SLOW}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: raid
+      - uuid: fd2659f463dd46028c325bd19c423a88
+        name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Free size'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.4.{#SNMPINDEX}
+        key: qnap.raid.free[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: raid
+      - uuid: 7109cae30aff4b29869c582ca326430d
+        name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Used size'
+        type: CALCULATED
+        key: qnap.raid.used[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: last(//qnap.raid.total[{#SNMPINDEX}])-last(//qnap.raid.free[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: raid
+        units: B
+      - uuid: 6c04ca139af54c3a870b162b5340e3a8
+        name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Space utilization'
+        type: CALCULATED
+        key: qnap.raid.pused[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: 100*(last(//qnap.raid.total[{#SNMPINDEX}])-last(//qnap.raid.free[{#SNMPINDEX}]))/last(//qnap.raid.total[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: raid
+        units: '%'
+      - uuid: 35fad8c50f5b46de84eef58d11c5bf32
+        name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Free space'
+        type: CALCULATED
+        key: qnap.raid.pfree[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: 100*last(//qnap.raid.free[{#SNMPINDEX}])/last(//qnap.raid.total[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: raid
+        units: '%'
+      - uuid: dd0734f22fdf4a1f869640ec452c06b2
+        name: 'RAID {#SNMPINDEX} ({#RAIDLEVEL}): Health'
+        type: CALCULATED
+        key: qnap.raid.health[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        params: 2*find(//qnap.raid.status[{#SNMPINDEX}],,"iregexp","{$QNAP.STATUS.BAD.MATCHES}")+(1-find(//qnap.raid.status[{#SNMPINDEX}],,"iregexp","{$QNAP.STATUS.BAD.MATCHES}"))*find(//qnap.raid.status[{#SNMPINDEX}],,"iregexp","{$QNAP.STATUS.WARN.MATCHES}")
+        tags:
+        - tag: component
+          value: raid
+        valuemap:
+          name: QNAP health
+    - uuid: 43ff6678777645ae8aa38589a0bbf611
+      name: Storage pool discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#POOLID},1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.2,{#POOLCAP},1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.3]
+      key: qnap.pool.discovery
+      delay: 30m
+      lifetime: 7d
+      description: Storage pool. Sifir kapasiteli (bos/sahte) kayitlar filtrelenir.
+      filter:
+        evaltype: AND_OR
+        conditions:
+        - macro: '{#POOLCAP}'
+          value: ^[1-9][0-9]*$
+          formulaid: A
+      item_prototypes:
+      - uuid: ef14c16ed22340a08177923bd058f7b8
+        name: 'Pool {#POOLID}: Status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.5.{#SNMPINDEX}
+        key: qnap.pool.status[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        valuemap:
+          name: QNAP pool status
+        tags:
+        - tag: component
+          value: pool
+        trigger_prototypes:
+        - uuid: 9e08c21b44eb4ec48f1c4e925b0de358
+          expression: last(/QNAP NAS Storage by SNMP/qnap.pool.status[{#SNMPINDEX}])<=-2
+          name: 'Pool {#POOLID}: Status is error/not ready'
+          priority: HIGH
+          tags:
+          - tag: component
+            value: pool
+        - uuid: 80c479fae36c41a0800577d6dcc28748
+          expression: last(/QNAP NAS Storage by SNMP/qnap.pool.status[{#SNMPINDEX}])=-1
+          name: 'Pool {#POOLID}: Status is warning'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: pool
+      - uuid: f5ceeffd9a984f148c5039767c3ece40
+        name: 'Pool {#POOLID}: Total capacity'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.3.{#SNMPINDEX}
+        key: qnap.pool.total[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.SLOW}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: pool
+      - uuid: 5630d8e590704b588669a119189e9692
+        name: 'Pool {#POOLID}: Free size'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.4.{#SNMPINDEX}
+        key: qnap.pool.free[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: pool
+      - uuid: a5eed914127a4a2489f350c43173959b
+        name: 'Pool {#POOLID}: Used size'
+        type: CALCULATED
+        key: qnap.pool.used[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: last(//qnap.pool.total[{#SNMPINDEX}])-last(//qnap.pool.free[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: pool
+        units: B
+      - uuid: 506b2f70d83b402980bbe9ac8a4f543e
+        name: 'Pool {#POOLID}: Space utilization'
+        type: CALCULATED
+        key: qnap.pool.pused[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: 100*(last(//qnap.pool.total[{#SNMPINDEX}])-last(//qnap.pool.free[{#SNMPINDEX}]))/last(//qnap.pool.total[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: pool
+        units: '%'
+        trigger_prototypes:
+        - uuid: f44241ca58f4429c89f55577ae8c09bf
+          expression: last(/QNAP NAS Storage by SNMP/qnap.pool.pused[{#SNMPINDEX}])>={$QNAP.POOL.PUSED.WARN} and last(/QNAP NAS Storage by SNMP/qnap.pool.pused[{#SNMPINDEX}])<{$QNAP.POOL.PUSED.CRIT}
+          name: 'Pool {#POOLID}: Space is low (>={$QNAP.POOL.PUSED.WARN}%)'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: pool
+        - uuid: 0e37d0abab5142be8f26918c159a4c58
+          expression: last(/QNAP NAS Storage by SNMP/qnap.pool.pused[{#SNMPINDEX}])>={$QNAP.POOL.PUSED.CRIT}
+          name: 'Pool {#POOLID}: Space is critically low (>={$QNAP.POOL.PUSED.CRIT}%)'
+          priority: HIGH
+          tags:
+          - tag: component
+            value: pool
+      - uuid: 46066c29b12d4b3489b2791d0fa0d799
+        name: 'Pool {#POOLID}: Free space'
+        type: CALCULATED
+        key: qnap.pool.pfree[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: 100*last(//qnap.pool.free[{#SNMPINDEX}])/last(//qnap.pool.total[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: pool
+        units: '%'
+      - uuid: e17bdbf8e5684dc58c8d4a7f01b9c76f
+        name: 'Pool {#POOLID}: Health'
+        type: CALCULATED
+        key: qnap.pool.health[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        params: (last(//qnap.pool.status[{#SNMPINDEX}])<=-2)*2+(last(//qnap.pool.status[{#SNMPINDEX}])=-1)
+        tags:
+        - tag: component
+          value: pool
+        valuemap:
+          name: QNAP health
+    - uuid: 89c9238dc8f148cd8787a85e0732324f
+      name: Volume discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#VOLNAME},1.3.6.1.4.1.24681.1.3.17.1.2,{#VOLFS},1.3.6.1.4.1.24681.1.3.17.1.3]
+      key: qnap.volume.discovery
+      delay: 30m
+      lifetime: 7d
+      description: Tum volume'ler (systemVolumeTableEx).
+      item_prototypes:
+      - uuid: 06a8db2fbab34ba08368ed5e30c962f9
+        name: 'Volume {#VOLNAME}: Status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.3.17.1.6.{#SNMPINDEX}
+        key: qnap.volume.status[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: '0'
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1h
+        tags:
+        - tag: component
+          value: volume
+        trigger_prototypes:
+        - uuid: b5d4d3f06be4443489d82412e6435688
+          expression: find(/QNAP NAS Storage by SNMP/qnap.volume.status[{#SNMPINDEX}],,"iregexp","{$QNAP.STATUS.BAD.MATCHES}")=1
+          name: 'Volume {#VOLNAME}: Status is not healthy'
+          priority: HIGH
+          tags:
+          - tag: component
+            value: volume
+      - uuid: 38bf8b8e340b49d382f6cd7d5bff755a
+        name: 'Volume {#VOLNAME}: Total size'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.3.17.1.4.{#SNMPINDEX}
+        key: qnap.volume.total[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.SLOW}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: volume
+      - uuid: 70521673c55e41d78933739e7fa70796
+        name: 'Volume {#VOLNAME}: Free size'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.3.17.1.5.{#SNMPINDEX}
+        key: qnap.volume.free[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: volume
+      - uuid: 1d50ac7509e649d880b7a25ad8e964d8
+        name: 'Volume {#VOLNAME}: Used size'
+        type: CALCULATED
+        key: qnap.volume.used[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: last(//qnap.volume.total[{#SNMPINDEX}])-last(//qnap.volume.free[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: volume
+        units: B
+      - uuid: 6417e4b248cd4c198c47297189285128
+        name: 'Volume {#VOLNAME}: Space utilization'
+        type: CALCULATED
+        key: qnap.volume.pused[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: 100*(last(//qnap.volume.total[{#SNMPINDEX}])-last(//qnap.volume.free[{#SNMPINDEX}]))/last(//qnap.volume.total[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: volume
+        units: '%'
+        trigger_prototypes:
+        - uuid: 42a44a7e65404e408710b98d32e18eb9
+          expression: last(/QNAP NAS Storage by SNMP/qnap.volume.pused[{#SNMPINDEX}])>={$QNAP.VOLUME.PUSED.WARN} and last(/QNAP NAS Storage by SNMP/qnap.volume.pused[{#SNMPINDEX}])<{$QNAP.VOLUME.PUSED.CRIT}
+          name: 'Volume {#VOLNAME}: Space is low (>={$QNAP.VOLUME.PUSED.WARN}%)'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: volume
+        - uuid: 8251bbcd11df4f0b8448a448e88efce2
+          expression: last(/QNAP NAS Storage by SNMP/qnap.volume.pused[{#SNMPINDEX}])>={$QNAP.VOLUME.PUSED.CRIT}
+          name: 'Volume {#VOLNAME}: Space is critically low (>={$QNAP.VOLUME.PUSED.CRIT}%)'
+          priority: HIGH
+          tags:
+          - tag: component
+            value: volume
+      - uuid: a3b5e72c609b46488ebedcf405b41b1b
+        name: 'Volume {#VOLNAME}: Free space'
+        type: CALCULATED
+        key: qnap.volume.pfree[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: 100*last(//qnap.volume.free[{#SNMPINDEX}])/last(//qnap.volume.total[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: volume
+        units: '%'
+      - uuid: df27ce1c212b45598675668839174897
+        name: 'Volume {#VOLNAME}: Health'
+        type: CALCULATED
+        key: qnap.volume.health[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        params: 2*find(//qnap.volume.status[{#SNMPINDEX}],,"iregexp","{$QNAP.STATUS.BAD.MATCHES}")
+        tags:
+        - tag: component
+          value: volume
+        valuemap:
+          name: QNAP health
+    - uuid: 2c7b098ea67a4b4389ab9e98bf665bc8
+      name: System fan discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#FANID},1.3.6.1.4.1.24681.1.4.1.1.1.1.2.2.1.2]
+      key: qnap.fan.discovery
+      delay: 30m
+      lifetime: 7d
+      item_prototypes:
+      - uuid: f106775f2396431a8a1965da2f1d77ce
+        name: 'Fan {#FANID}: Status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.2.2.1.4.{#SNMPINDEX}
+        key: qnap.fan.status[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        valuemap:
+          name: QNAP ok/fail
+        tags:
+        - tag: component
+          value: fan
+        trigger_prototypes:
+        - uuid: 55588304952242798c241960fbb4be23
+          expression: last(/QNAP NAS Storage by SNMP/qnap.fan.status[{#SNMPINDEX}])<>0
+          name: 'Fan {#FANID}: Fan failure'
+          priority: HIGH
+          tags:
+          - tag: component
+            value: fan
+      - uuid: 126b71f9d78f43a587163a5e77c5001f
+        name: 'Fan {#FANID}: Speed'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.2.2.1.5.{#SNMPINDEX}
+        key: qnap.fan.speed[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        units: rpm
+        tags:
+        - tag: component
+          value: fan
+    - uuid: 294d9caed1b74fb887b259e9da3f78bc
+      name: Power supply discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#PSUID},1.3.6.1.4.1.24681.1.4.1.1.1.1.3.2.1.2]
+      key: qnap.psu.discovery
+      delay: 30m
+      lifetime: 7d
+      item_prototypes:
+      - uuid: 12e2807ff1e448278bc566f6aed82f4c
+        name: 'PSU {#PSUID}: Status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.3.2.1.4.{#SNMPINDEX}
+        key: qnap.psu.status[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        valuemap:
+          name: QNAP ok/fail
+        tags:
+        - tag: component
+          value: power
+        trigger_prototypes:
+        - uuid: 954b94b8793741908da00a79c264dcc6
+          expression: last(/QNAP NAS Storage by SNMP/qnap.psu.status[{#SNMPINDEX}])<>0
+          name: 'PSU {#PSUID}: Power supply failure'
+          priority: HIGH
+          tags:
+          - tag: component
+            value: power
+      - uuid: 464d03ed48ba449a8961aea00f62d735
+        name: 'PSU {#PSUID}: Fan speed'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.3.2.1.5.{#SNMPINDEX}
+        key: qnap.psu.fanspeed[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        units: rpm
+        tags:
+        - tag: component
+          value: power
+      - uuid: dfa280eeb08042268c8bf6667762140c
+        name: 'PSU {#PSUID}: Temperature'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.3.2.1.6.{#SNMPINDEX}
+        key: qnap.psu.temp[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        units: °C
+        tags:
+        - tag: component
+          value: power
+    - uuid: 91357884881c432d82b325a263f21249
+      name: Volume performance discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#BLVID},1.3.6.1.4.1.24681.1.4.1.11.5.6.2.1.2]
+      key: qnap.perf.discovery
+      delay: 30m
+      lifetime: 7d
+      item_prototypes:
+      - uuid: bff2803835a94f41883af9261f49bb4f
+        name: 'Device {#BLVID}: IOPS'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.11.5.6.2.1.3.{#SNMPINDEX}
+        key: qnap.perf.iops[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        tags:
+        - tag: component
+          value: performance
+      - uuid: d30421f80c1143f682bd7058fdd19c4b
+        name: 'Device {#BLVID}: Latency'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.11.5.6.2.1.4.{#SNMPINDEX}
+        key: qnap.perf.latency[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        units: ms
+        description: Birim MIB'te belirtilmemis; ms kabul edildi.
+        tags:
+        - tag: component
+          value: performance
+        trigger_prototypes:
+        - uuid: d4b6dd7486f4434d8a771574d6be3165
+          expression: min(/QNAP NAS Storage by SNMP/qnap.perf.latency[{#SNMPINDEX}],5m)>{$QNAP.LATENCY.WARN}
+          name: 'Device {#BLVID}: High I/O latency (>{$QNAP.LATENCY.WARN}ms for 5m)'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: performance
+    - uuid: d9eccdaa06f0442e88235becbcb83837
+      name: iSCSI LUN discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#LUNNAME},1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.6,{#LUNCAP},1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.3]
+      key: qnap.lun.discovery
+      delay: 30m
+      lifetime: 7d
+      description: iSCSI LUN. Kapasitesi 0 olan (sahte/bos) kayitlar kesfedilmez.
+      filter:
+        evaltype: AND_OR
+        conditions:
+        - macro: '{#LUNCAP}'
+          value: ^[1-9][0-9]*$
+          formulaid: A
+      item_prototypes:
+      - uuid: 39b1ca083daa4fda853758138ed8242f
+        name: 'LUN {#LUNNAME}: Status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.5.{#SNMPINDEX}
+        key: qnap.lun.status[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: '0'
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1h
+        tags:
+        - tag: component
+          value: iscsi
+        trigger_prototypes:
+        - uuid: d7825401d5ab46fa8c4359e4577b0049
+          expression: find(/QNAP NAS Storage by SNMP/qnap.lun.status[{#SNMPINDEX}],,"iregexp","{$QNAP.STATUS.BAD.MATCHES}")=1
+          name: 'LUN {#LUNNAME}: Status is not healthy'
+          priority: AVERAGE
+          tags:
+          - tag: component
+            value: iscsi
+      - uuid: 31096021f4fd4a40818b83ec50d060fb
+        name: 'LUN {#LUNNAME}: Total capacity'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.3.{#SNMPINDEX}
+        key: qnap.lun.capacity[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.SLOW}'
+        history: 31d
+        trends: 365d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: iscsi
+      - uuid: 0c312bc106214d2481e94109cee420cc
+        name: 'LUN {#LUNNAME}: Space utilization (device)'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.4.{#SNMPINDEX}
+        key: qnap.lun.pused[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        units: '%'
+        tags:
+        - tag: component
+          value: iscsi
+        trigger_prototypes:
+        - uuid: 94bfcfba2a444c7981a54fe980f71e35
+          expression: last(/QNAP NAS Storage by SNMP/qnap.lun.pused[{#SNMPINDEX}])>={$QNAP.LUN.PUSED.WARN}
+          name: 'LUN {#LUNNAME}: Used space is high (>={$QNAP.LUN.PUSED.WARN}%)'
+          priority: WARNING
+          tags:
+          - tag: component
+            value: iscsi
+      - uuid: 55df9dd512ee4c0880d8859cec178313
+        name: 'LUN {#LUNNAME}: Used size'
+        type: CALCULATED
+        key: qnap.lun.used[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: last(//qnap.lun.capacity[{#SNMPINDEX}])*last(//qnap.lun.pused[{#SNMPINDEX}])/100
+        tags:
+        - tag: component
+          value: iscsi
+        units: B
+      - uuid: 42656872db7a47fc831d2a43c8b04b93
+        name: 'LUN {#LUNNAME}: Free size'
+        type: CALCULATED
+        key: qnap.lun.free[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: last(//qnap.lun.capacity[{#SNMPINDEX}])*(100-last(//qnap.lun.pused[{#SNMPINDEX}]))/100
+        tags:
+        - tag: component
+          value: iscsi
+        units: B
+      - uuid: 114502cf65f34e6f8774d72055fa00c8
+        name: 'LUN {#LUNNAME}: Free space'
+        type: CALCULATED
+        key: qnap.lun.pfree[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.NORMAL}'
+        history: 31d
+        trends: 365d
+        params: 100-last(//qnap.lun.pused[{#SNMPINDEX}])
+        tags:
+        - tag: component
+          value: iscsi
+        units: '%'
+    - uuid: 15b29283ba4e4f908f9771ce4b02ee1d
+      name: iSCSI target discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#TARGETNAME},1.3.6.1.4.1.24681.1.4.1.1.2.1.11.2.1.3,{#TARGETIQN},1.3.6.1.4.1.24681.1.4.1.1.2.1.11.2.1.4]
+      key: qnap.target.discovery
+      delay: 30m
+      lifetime: 7d
+      description: iSCSI target. IQN'i bos kayitlar kesfedilmez.
+      filter:
+        evaltype: AND_OR
+        conditions:
+        - macro: '{#TARGETIQN}'
+          value: ^.+$
+          formulaid: A
+      item_prototypes:
+      - uuid: 4b9d676ee87f40cd87f0c318f0b684c8
+        name: 'Target {#TARGETNAME}: Status'
+        type: SNMP_AGENT
+        snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.2.1.11.2.1.5.{#SNMPINDEX}
+        key: qnap.target.status[{#SNMPINDEX}]
+        delay: '{$QNAP.POLL.FAST}'
+        history: 31d
+        trends: 365d
+        value_type: FLOAT
+        valuemap:
+          name: QNAP iSCSI target status
+        tags:
+        - tag: component
+          value: iscsi
+        trigger_prototypes:
+        - uuid: d93235a85786452686af737879eed124
+          expression: last(/QNAP NAS Storage by SNMP/qnap.target.status[{#SNMPINDEX}])=-1
+          name: 'Target {#TARGETNAME}: Target is offline'
+          priority: AVERAGE
+          tags:
+          - tag: component
+            value: iscsi
+    macros:
+    - macro: '{$QNAP.POLL.FAST}'
+      value: 30s
+      description: 'Kritik veriler: durum, sicaklik, fan, PSU, CPU, bellek, performans'
+    - macro: '{$QNAP.POLL.NORMAL}'
+      value: 1m
+      description: Bos alan / doluluk / hesaplanan kalemler
+    - macro: '{$QNAP.POLL.SLOW}'
+      value: 15m
+      description: 'Nadiren degisen veriler: toplam kapasite, sayilar'
+    - macro: '{$QNAP.CPU.UTIL.WARN}'
+      value: '90'
+      description: CPU kullanim uyari (%)
+    - macro: '{$QNAP.MEM.PUSED.WARN}'
+      value: '90'
+      description: Bellek kullanim uyari (%)
+    - macro: '{$QNAP.CPU.TEMP.WARN}'
+      value: '80'
+      description: CPU sicaklik uyari (°C)
+    - macro: '{$QNAP.CPU.TEMP.CRIT}'
+      value: '90'
+      description: CPU sicaklik kritik (°C)
+    - macro: '{$QNAP.SYS.TEMP.WARN}'
+      value: '55'
+      description: Sistem/enclosure sicaklik uyari (°C)
+    - macro: '{$QNAP.SYS.TEMP.CRIT}'
+      value: '65'
+      description: Sistem/enclosure sicaklik kritik (°C)
+    - macro: '{$QNAP.DISK.TEMP.WARN}'
+      value: '50'
+      description: Disk sicaklik uyari (°C)
+    - macro: '{$QNAP.DISK.TEMP.CRIT}'
+      value: '60'
+      description: Disk sicaklik kritik (°C)
+    - macro: '{$QNAP.VOLUME.PUSED.WARN}'
+      value: '80'
+      description: Volume doluluk uyari (%)
+    - macro: '{$QNAP.VOLUME.PUSED.CRIT}'
+      value: '90'
+      description: Volume doluluk kritik (%)
+    - macro: '{$QNAP.POOL.PUSED.WARN}'
+      value: '80'
+      description: Pool doluluk uyari (%)
+    - macro: '{$QNAP.POOL.PUSED.CRIT}'
+      value: '90'
+      description: Pool doluluk kritik (%)
+    - macro: '{$QNAP.LUN.PUSED.WARN}'
+      value: '85'
+      description: LUN doluluk uyari (%)
+    - macro: '{$QNAP.LATENCY.WARN}'
+      value: '50'
+      description: Disk latency uyari (ms)
+    - macro: '{$QNAP.STATUS.BAD.MATCHES}'
+      value: degrad|fail|error|inactive|abnormal|read.?only|not.?active|offline|unmount|crash
+      description: RAID/Volume/LUN metin durumunda SORUN regex (harf duyarsiz)
+    - macro: '{$QNAP.STATUS.WARN.MATCHES}'
+      value: rebuild|resync|synchroniz|recover|migrat|expand|scrub|check
+      description: RAID metin durumunda UYARI regex
+    tags:
+    - tag: class
+      value: storage
+    - tag: target
+      value: qnap
+    valuemaps:
+    - uuid: a991584ddd2f4ef18fb51194aac355a4
+      name: QNAP SMART status
+      mappings:
+      - value: '0'
+        newvalue: Good
+      - value: '1'
+        newvalue: Warning
+      - value: '2'
+        newvalue: Abnormal
+      - value: '-1'
+        newvalue: Error
+    - uuid: 4bcfb132bf7140b28ecc3fa4ab44b032
+      name: QNAP ok/fail
+      mappings:
+      - value: '0'
+        newvalue: OK
+      - value: '-1'
+        newvalue: Fail
+    - uuid: 1916174a6fa34d458e1dc604e64d2db0
+      name: QNAP pool status
+      mappings:
+      - value: '0'
+        newvalue: Ready
+      - value: '-1'
+        newvalue: Warning
+      - value: '-2'
+        newvalue: Not ready
+      - value: '-3'
+        newvalue: Error
+    - uuid: 61f39b527db144ab82a758d5e21af967
+      name: QNAP iSCSI target status
+      mappings:
+      - value: '-1'
+        newvalue: Offline
+      - value: '0'
+        newvalue: Ready
+      - value: '1'
+        newvalue: Connected
+    - uuid: 51518414ea5d4df7894b88fef95def8c
+      name: QNAP disk slot status
+      mappings:
+      - value: '0'
+        newvalue: Ready (online)
+      - value: '-4'
+        newvalue: Unknown
+      - value: '-5'
+        newvalue: No disk
+      - value: '-6'
+        newvalue: Invalid
+      - value: '-9'
+        newvalue: Read/Write error
+    - uuid: 248673a756bc403e823ae13d5bdd9f41
+      name: QNAP health
+      mappings:
+      - value: '0'
+        newvalue: OK
+      - value: '1'
+        newvalue: Warning
+      - value: '2'
+        newvalue: Critical
