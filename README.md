@@ -8,3 +8,9 @@ Standart izlemede güncel dokümanlardan alınan veriler ve SNMP izlemelerinde i
 Günümüzde teknoloji sektöründe veri ve bilgiye ulaşım eskiye nazaran kolaylaşmış olsa da köşe bucakta ortaya çıkmamış bilgi kırıntıları bulabiliyoruz. Ben de bulduklarımı veya ham verileri işleyip oluşturduklarımı toplulukla paylaşmayı bir görev değil, bir hizmet olarak benimsedim.
 
 Faydalı olması dileğiyle.
+
+
+Talep ve önerilerinizi aşağıdaki mail adresinden iletebilirsiniz.
+
+Serden Ekşi
+serden_eksi@hotmail.com
