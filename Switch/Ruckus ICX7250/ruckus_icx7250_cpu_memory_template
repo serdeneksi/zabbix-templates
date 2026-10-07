@@ -1,0 +1,63 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: cb0888acc0434db7a49a67941eb4657c
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: aabf46a537294028a70a65aa7355d110
+      template: 'Ruckus ICX7250 CPU Memory'
+      name: 'Ruckus ICX7250 CPU Memory'
+      description: |
+        Ruckus / Brocade FastIron (IronWare) ICX serisi icin CPU ve Memory izleme.
+        Kaynak MIB: FOUNDRY-SN-AGENT-MIB (enterprise 1991)
+        Dogrulanmis gercek snmpwalk ciktisina dayanir (ICX7250, IronWare 08.0.95g).
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 6622858098634c869088e7fff5160904
+          name: 'CPU Utilization'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.1991.1.1.2.1.52.0
+          key: 'system.cpu.util[snAgGblCpuUtil1MinAvg.0]'
+          history: 7d
+          value_type: FLOAT
+          units: '%'
+          description: 'FOUNDRY-SN-AGENT-MIB::snAgGblCpuUtil1MinAvg - 1 dakikalik CPU kullanim ortalamasi.'
+          tags:
+            - tag: component
+              value: cpu
+          triggers:
+            - uuid: d0a987e4cbb444e89aaa548e2b514c41
+              expression: 'min(/Ruckus ICX7250 CPU Memory/system.cpu.util[snAgGblCpuUtil1MinAvg.0],5m)>{$CPU.UTIL.CRIT}'
+              name: 'High CPU utilization'
+              priority: WARNING
+              description: 'CPU kullanimi esik degerin uzerinde.'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 66f2a7bd682d44f7aced0a7742b38b33
+          name: 'Memory Utilization'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.1991.1.1.2.1.53.0
+          key: 'vm.memory.util[snAgGblDynMemUtil.0]'
+          history: 7d
+          value_type: FLOAT
+          units: '%'
+          description: 'FOUNDRY-SN-AGENT-MIB::snAgGblDynMemUtil - dinamik bellek kullanim yuzdesi.'
+          tags:
+            - tag: component
+              value: memory
+          triggers:
+            - uuid: 92a2b916f1be4ee9bdc8de175a205d10
+              expression: 'min(/Ruckus ICX7250 CPU Memory/vm.memory.util[snAgGblDynMemUtil.0],5m)>{$MEMORY.UTIL.MAX}'
+              name: 'High memory utilization'
+              priority: AVERAGE
+              description: 'Bellek kullanimi esik degerin uzerinde.'
+              tags:
+                - tag: scope
+                  value: capacity
+      macros:
+        - macro: '{$CPU.UTIL.CRIT}'
+          value: '90'
+        - macro: '{$MEMORY.UTIL.MAX}'
+          value: '90'
