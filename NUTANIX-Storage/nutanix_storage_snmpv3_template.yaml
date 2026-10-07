@@ -1,0 +1,644 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: db0f6f37ebeb4ea08489124345af2a45
+    name: Templates/Server hardware
+  templates:
+  - uuid: 66f6181bcb4c4f4c838fbc804a036db6
+    template: Nutanix by SNMPv3
+    name: Nutanix by SNMPv3
+    description: Nutanix AOS (CVM/Cluster VIP) izleme - SNMPv3, NUTANIX-MIB (1.3.6.1.4.1.41263). Host arayuzu SNMPv3 (authPriv) olmali. Cluster VIP veya tek bir CVM IP'sine baglayin.
+    groups:
+    - name: Templates/Server hardware
+    items:
+    - uuid: dd34e64291ed4f90861ea286875b2054
+      name: 'Cluster: Name'
+      type: SNMP_AGENT
+      snmp_oid: .1.3.6.1.4.1.41263.501.0
+      key: nutanix.cluster.name
+      delay: 1h
+      history: 7d
+      trends: '0'
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 1d
+      tags:
+      - tag: component
+        value: cluster
+    - uuid: d58578dd16a745ca8632d56f4e4fe33c
+      name: 'Cluster: Version'
+      type: SNMP_AGENT
+      snmp_oid: .1.3.6.1.4.1.41263.502.0
+      key: nutanix.cluster.version
+      delay: 1h
+      history: 7d
+      trends: '0'
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 1d
+      tags:
+      - tag: component
+        value: cluster
+    - uuid: 16ef5104b044430c8ba2fa87c29e478c
+      name: 'Cluster: Status'
+      type: SNMP_AGENT
+      snmp_oid: .1.3.6.1.4.1.41263.503.0
+      key: nutanix.cluster.status
+      delay: 1m
+      history: 7d
+      trends: '0'
+      value_type: CHAR
+      description: clusterStatus. Beklenen "iyi" deger {$NUTANIX.CLUSTER.STATUS.OK} makrosunda.
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 1d
+      tags:
+      - tag: component
+        value: cluster
+    - uuid: 416de52cca9247658055b7a9da2e168b
+      name: 'Cluster: Total storage capacity'
+      type: SNMP_AGENT
+      snmp_oid: .1.3.6.1.4.1.41263.504.0
+      key: nutanix.cluster.storage.total
+      delay: 5m
+      history: 7d
+      value_type: UNSIGNED
+      units: B
+      tags:
+      - tag: component
+        value: cluster
+    - uuid: ffa7c2becc6242d689cbdc33e44e157b
+      name: 'Cluster: Used storage capacity'
+      type: SNMP_AGENT
+      snmp_oid: .1.3.6.1.4.1.41263.505.0
+      key: nutanix.cluster.storage.used
+      delay: 5m
+      history: 7d
+      value_type: UNSIGNED
+      units: B
+      tags:
+      - tag: component
+        value: cluster
+    - uuid: 1658eef0c97c437186d976e76b479db3
+      name: 'Cluster: Storage used, %'
+      type: CALCULATED
+      key: nutanix.cluster.storage.used.pct
+      delay: 5m
+      history: 7d
+      units: '%'
+      params: last(//nutanix.cluster.storage.used)/last(//nutanix.cluster.storage.total)*100
+      tags:
+      - tag: component
+        value: cluster
+    - uuid: a17fea86bf8f438189e2251c2382713b
+      name: 'Cluster: IOPS'
+      type: SNMP_AGENT
+      snmp_oid: .1.3.6.1.4.1.41263.506.0
+      key: nutanix.cluster.iops
+      delay: 1m
+      history: 7d
+      value_type: UNSIGNED
+      tags:
+      - tag: component
+        value: cluster
+    - uuid: 5484af3f881f489c88dd6673b50c4b62
+      name: 'Cluster: Average latency'
+      type: SNMP_AGENT
+      snmp_oid: .1.3.6.1.4.1.41263.507.0
+      key: nutanix.cluster.latency
+      delay: 1m
+      history: 7d
+      value_type: UNSIGNED
+      units: us
+      tags:
+      - tag: component
+        value: cluster
+    - uuid: 843dae2ee606416e8aecf55daf28a9e6
+      name: 'Cluster: IO bandwidth'
+      type: SNMP_AGENT
+      snmp_oid: .1.3.6.1.4.1.41263.508.0
+      key: nutanix.cluster.iobandwidth
+      delay: 1m
+      history: 7d
+      value_type: UNSIGNED
+      tags:
+      - tag: component
+        value: cluster
+    discovery_rules:
+    - uuid: a24d7c9006464e6d852fdd8085faf66d
+      name: Hypervisor (node) discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#HV_NAME},.1.3.6.1.4.1.41263.9.1.3,{#HV_ID},.1.3.6.1.4.1.41263.9.1.2]
+      key: nutanix.hv.discovery
+      delay: 1h
+      item_prototypes:
+      - uuid: 8721d88cc30545af8063176b8687e79b
+        name: 'Hypervisor {#HV_NAME}: VM count'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.9.1.4.{#SNMPINDEX}
+        key: nutanix.hv.vmcount[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: hypervisor
+      - uuid: 6ac5354205474243831cd8aebae41993
+        name: 'Hypervisor {#HV_NAME}: CPU usage'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.9.1.6.{#SNMPINDEX}
+        key: nutanix.hv.cpu.util[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        units: '%'
+        tags:
+        - tag: component
+          value: hypervisor
+      - uuid: 3363c6f472ab49698cdea3f9edc9ca28
+        name: 'Hypervisor {#HV_NAME}: Memory usage'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.9.1.8.{#SNMPINDEX}
+        key: nutanix.hv.mem.util[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        units: '%'
+        tags:
+        - tag: component
+          value: hypervisor
+      - uuid: 5893ef80395e44508dce649e3a6f7d36
+        name: 'Hypervisor {#HV_NAME}: Read IOPS'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.9.1.9.{#SNMPINDEX}
+        key: nutanix.hv.iops.read[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: hypervisor
+      - uuid: 715a0bbd290a4d3280c9c3efd16e4600
+        name: 'Hypervisor {#HV_NAME}: Write IOPS'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.9.1.10.{#SNMPINDEX}
+        key: nutanix.hv.iops.write[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: hypervisor
+      - uuid: c9a7d3deb10e4e3b84dbde07990882a2
+        name: 'Hypervisor {#HV_NAME}: Average latency'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.9.1.11.{#SNMPINDEX}
+        key: nutanix.hv.latency[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        value_type: UNSIGNED
+        units: us
+        tags:
+        - tag: component
+          value: hypervisor
+      - uuid: d71e55970da447e989bd84e430180740
+        name: 'Hypervisor {#HV_NAME}: IO bandwidth'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.9.1.12.{#SNMPINDEX}
+        key: nutanix.hv.iobandwidth[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: hypervisor
+      trigger_prototypes:
+      - uuid: 2b5b2a4edc4f40608095c40056a5027e
+        expression: min(/Nutanix by SNMPv3/nutanix.hv.cpu.util[{#SNMPINDEX}],15m)>{$NUTANIX.HV.CPU.WARN}
+        name: 'Hypervisor {#HV_NAME}: CPU usage is high (>{$NUTANIX.HV.CPU.WARN}% for 15m)'
+        priority: WARNING
+      - uuid: 8da484df00c04cd585c55ed5c50de970
+        expression: min(/Nutanix by SNMPv3/nutanix.hv.mem.util[{#SNMPINDEX}],15m)>{$NUTANIX.HV.MEM.WARN}
+        name: 'Hypervisor {#HV_NAME}: Memory usage is high (>{$NUTANIX.HV.MEM.WARN}% for 15m)'
+        priority: WARNING
+    - uuid: 2d53ca4453d041e78ab637aa02e717c4
+      name: Controller VM discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#CVM_ID},.1.3.6.1.4.1.41263.11.1.2]
+      key: nutanix.cvm.discovery
+      delay: 1h
+      item_prototypes:
+      - uuid: 3273cfb74a704e218ad467e21a1b6a00
+        name: 'CVM {#CVM_ID}: Status'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.11.1.3.{#SNMPINDEX}
+        key: nutanix.cvm.status[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        trends: '0'
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1d
+        tags:
+        - tag: component
+          value: cvm
+      - uuid: a02b1199519448d386038897123a2220
+        name: 'CVM {#CVM_ID}: Data service status'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.11.1.4.{#SNMPINDEX}
+        key: nutanix.cvm.data.status[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        trends: '0'
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1d
+        tags:
+        - tag: component
+          value: cvm
+      - uuid: b5c2f10d6fd0426784f99d9888667c29
+        name: 'CVM {#CVM_ID}: Metadata service status'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.11.1.5.{#SNMPINDEX}
+        key: nutanix.cvm.meta.status[{#SNMPINDEX}]
+        delay: 1m
+        history: 7d
+        trends: '0'
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1d
+        tags:
+        - tag: component
+          value: cvm
+      trigger_prototypes:
+      - uuid: a9484f5ef0e7439b85817ecf7289e464
+        expression: find(/Nutanix by SNMPv3/nutanix.cvm.status[{#SNMPINDEX}],,"iregexp","{$NUTANIX.CVM.STATUS.OK}")=0
+        name: 'CVM {#CVM_ID}: Status is not OK'
+        priority: HIGH
+      - uuid: 1cdd5cfc5747426f8b555a5a316e6def
+        expression: find(/Nutanix by SNMPv3/nutanix.cvm.data.status[{#SNMPINDEX}],,"iregexp","{$NUTANIX.CVM.STATUS.OK}")=0
+        name: 'CVM {#CVM_ID}: Data service is not OK'
+        priority: AVERAGE
+      - uuid: b9c3a9bf9ecc4cdc81fb5e5c95850e9c
+        expression: find(/Nutanix by SNMPv3/nutanix.cvm.meta.status[{#SNMPINDEX}],,"iregexp","{$NUTANIX.CVM.STATUS.OK}")=0
+        name: 'CVM {#CVM_ID}: Metadata service is not OK'
+        priority: AVERAGE
+    - uuid: 8a6a65672abf42e28fdd971a407e10e9
+      name: Disk discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#DISK_ID},.1.3.6.1.4.1.41263.3.1.2,{#DISK_CVM},.1.3.6.1.4.1.41263.3.1.3,{#DISK_SERIAL},.1.3.6.1.4.1.41263.3.1.4]
+      key: nutanix.disk.discovery
+      delay: 1h
+      item_prototypes:
+      - uuid: 50b9cf5fad5a496582cc9b1ba166e3cf
+        name: 'Disk {#DISK_ID} ({#DISK_SERIAL}): State'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.3.1.13.{#SNMPINDEX}
+        key: nutanix.disk.state[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        description: dstState (enumeration). Deger karsiliklarini MIB uzerinden dogrulayip trigger ekleyin.
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1d
+        tags:
+        - tag: component
+          value: disk
+      - uuid: cc140307474b425989f5c79dda7cd644
+        name: 'Disk {#DISK_ID} ({#DISK_SERIAL}): Total size'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.3.1.6.{#SNMPINDEX}
+        key: nutanix.disk.total[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: disk
+      - uuid: 58a8f2ba56df45de82a8bfd7c8ac5be2
+        name: 'Disk {#DISK_ID} ({#DISK_SERIAL}): Free size'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.3.1.7.{#SNMPINDEX}
+        key: nutanix.disk.free[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: disk
+      - uuid: ab4288847e004c69872ae85cbf110ad9
+        name: 'Disk {#DISK_ID} ({#DISK_SERIAL}): Used, %'
+        type: CALCULATED
+        key: nutanix.disk.used.pct[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        units: '%'
+        params: (1-last(//nutanix.disk.free[{#SNMPINDEX}])/last(//nutanix.disk.total[{#SNMPINDEX}]))*100
+        tags:
+        - tag: component
+          value: disk
+      - uuid: 1c1c5e279b4145148202175d61432657
+        name: 'Disk {#DISK_ID} ({#DISK_SERIAL}): IOPS'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.3.1.12.{#SNMPINDEX}
+        key: nutanix.disk.iops[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: disk
+      - uuid: 4afcf5cc6db549ff80459b8e764a2499
+        name: 'Disk {#DISK_ID} ({#DISK_SERIAL}): Average latency'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.3.1.10.{#SNMPINDEX}
+        key: nutanix.disk.latency[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        units: us
+        tags:
+        - tag: component
+          value: disk
+      trigger_prototypes:
+      - uuid: 480e59761e11430b88942e0b116e7d32
+        expression: last(/Nutanix by SNMPv3/nutanix.disk.used.pct[{#SNMPINDEX}])>{$NUTANIX.DISK.USED.WARN}
+        name: 'Disk {#DISK_ID} ({#DISK_SERIAL}): Usage is high (>{$NUTANIX.DISK.USED.WARN}%)'
+        priority: WARNING
+    - uuid: b1bbb7d7e8d840af873d24a4eb7026e8
+      name: Storage pool discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#SP_NAME},.1.3.6.1.4.1.41263.7.1.3,{#SP_ID},.1.3.6.1.4.1.41263.7.1.2]
+      key: nutanix.pool.discovery
+      delay: 1h
+      item_prototypes:
+      - uuid: 60b1f31c4a7149ff839710229ae6b03f
+        name: 'Storage pool {#SP_NAME}: Total capacity'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.7.1.4.{#SNMPINDEX}
+        key: nutanix.pool.total[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: storage_pool
+      - uuid: a95ce67ecd9348aa892dab12d2576154
+        name: 'Storage pool {#SP_NAME}: Used capacity'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.7.1.5.{#SNMPINDEX}
+        key: nutanix.pool.used[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: storage_pool
+      - uuid: 2ff9df4ad912454981f0c9dd5f6c9c38
+        name: 'Storage pool {#SP_NAME}: Used, %'
+        type: CALCULATED
+        key: nutanix.pool.used.pct[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        units: '%'
+        params: last(//nutanix.pool.used[{#SNMPINDEX}])/last(//nutanix.pool.total[{#SNMPINDEX}])*100
+        tags:
+        - tag: component
+          value: storage_pool
+      - uuid: b81b568c64374d4584d68f8c2870464b
+        name: 'Storage pool {#SP_NAME}: IOPS'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.7.1.6.{#SNMPINDEX}
+        key: nutanix.pool.iops[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: storage_pool
+      - uuid: 3d7dc213b30a4ce78333bbf9348137b3
+        name: 'Storage pool {#SP_NAME}: Average latency'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.7.1.7.{#SNMPINDEX}
+        key: nutanix.pool.latency[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        units: us
+        tags:
+        - tag: component
+          value: storage_pool
+      - uuid: 93fa270f2b6e4171878de0f63c71abb0
+        name: 'Storage pool {#SP_NAME}: IO bandwidth'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.7.1.8.{#SNMPINDEX}
+        key: nutanix.pool.iobandwidth[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: storage_pool
+      trigger_prototypes:
+      - uuid: 861c429e8fee407a8cfd473f2cc88a58
+        expression: last(/Nutanix by SNMPv3/nutanix.pool.used.pct[{#SNMPINDEX}])>{$NUTANIX.STORAGE.USED.WARN} and last(/Nutanix by SNMPv3/nutanix.pool.used.pct[{#SNMPINDEX}])<={$NUTANIX.STORAGE.USED.HIGH}
+        name: 'Storage pool {#SP_NAME}: Usage is high (>{$NUTANIX.STORAGE.USED.WARN}%)'
+        priority: WARNING
+      - uuid: 979fbe7f686b40cf8733e800a562464b
+        expression: last(/Nutanix by SNMPv3/nutanix.pool.used.pct[{#SNMPINDEX}])>{$NUTANIX.STORAGE.USED.HIGH}
+        name: 'Storage pool {#SP_NAME}: Usage is critical (>{$NUTANIX.STORAGE.USED.HIGH}%)'
+        priority: HIGH
+    - uuid: 02749fdcb3414b9c8d3073efc6c1b287
+      name: Container discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#CT_NAME},.1.3.6.1.4.1.41263.8.1.3,{#CT_ID},.1.3.6.1.4.1.41263.8.1.2]
+      key: nutanix.container.discovery
+      delay: 1h
+      item_prototypes:
+      - uuid: 83d8bdf1d6254e27865360756effd39b
+        name: 'Container {#CT_NAME}: Total capacity'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.8.1.4.{#SNMPINDEX}
+        key: nutanix.container.total[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: container
+      - uuid: 4d224c394ae34e8282a7f739e7de34ca
+        name: 'Container {#CT_NAME}: Used capacity'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.8.1.5.{#SNMPINDEX}
+        key: nutanix.container.used[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        value_type: UNSIGNED
+        units: B
+        tags:
+        - tag: component
+          value: container
+      - uuid: d35d28278235448086a9c376cf3a2220
+        name: 'Container {#CT_NAME}: Used, %'
+        type: CALCULATED
+        key: nutanix.container.used.pct[{#SNMPINDEX}]
+        delay: 15m
+        history: 7d
+        units: '%'
+        params: last(//nutanix.container.used[{#SNMPINDEX}])/last(//nutanix.container.total[{#SNMPINDEX}])*100
+        tags:
+        - tag: component
+          value: container
+      - uuid: 9f9e9e5f691647bd818c5e631043b868
+        name: 'Container {#CT_NAME}: IOPS'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.8.1.6.{#SNMPINDEX}
+        key: nutanix.container.iops[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: container
+      - uuid: 5ae4f2ebcb184f6189354c6b9b5af84f
+        name: 'Container {#CT_NAME}: Average latency'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.8.1.7.{#SNMPINDEX}
+        key: nutanix.container.latency[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        units: us
+        tags:
+        - tag: component
+          value: container
+      - uuid: 548a878cf5c34ba7895e1f038f6b6433
+        name: 'Container {#CT_NAME}: IO bandwidth'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.8.1.8.{#SNMPINDEX}
+        key: nutanix.container.iobandwidth[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        value_type: UNSIGNED
+        tags:
+        - tag: component
+          value: container
+      trigger_prototypes:
+      - uuid: 2e0636e59b6547d28de9634427d604a9
+        expression: last(/Nutanix by SNMPv3/nutanix.container.used.pct[{#SNMPINDEX}])>{$NUTANIX.STORAGE.USED.WARN} and last(/Nutanix by SNMPv3/nutanix.container.used.pct[{#SNMPINDEX}])<={$NUTANIX.STORAGE.USED.HIGH}
+        name: 'Container {#CT_NAME}: Usage is high (>{$NUTANIX.STORAGE.USED.WARN}%)'
+        priority: WARNING
+      - uuid: 344d1a55018446d5852f5ee89fcdcb88
+        expression: last(/Nutanix by SNMPv3/nutanix.container.used.pct[{#SNMPINDEX}])>{$NUTANIX.STORAGE.USED.HIGH}
+        name: 'Container {#CT_NAME}: Usage is critical (>{$NUTANIX.STORAGE.USED.HIGH}%)'
+        priority: HIGH
+    - uuid: ffdc3dabbd3547238e63a50c9d4a460b
+      name: VM discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#VM_NAME},.1.3.6.1.4.1.41263.10.1.3,{#VM_ID},.1.3.6.1.4.1.41263.10.1.2]
+      key: nutanix.vm.discovery
+      delay: 1h
+      status: DISABLED
+      description: Varsayilan olarak KAPALI. Cok VM olan cluster'larda item sayisi hizla artar; SNMP v3 ile VM tablosunda bosluklar raporlanmistir. Gerekirse acin.
+      item_prototypes:
+      - uuid: 1257ddd66a1e4a808955906e2beabe19
+        name: 'VM {#VM_NAME}: Power state'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.10.1.5.{#SNMPINDEX}
+        key: nutanix.vm.power[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        trends: '0'
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 1d
+        tags:
+        - tag: component
+          value: vm
+      - uuid: a99243de1018418b87dc9de51add26c1
+        name: 'VM {#VM_NAME}: CPU usage'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.10.1.7.{#SNMPINDEX}
+        key: nutanix.vm.cpu.util[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        units: '%'
+        tags:
+        - tag: component
+          value: vm
+      - uuid: d947a1e60f28484086e9fce5bb56adb0
+        name: 'VM {#VM_NAME}: Memory usage'
+        type: SNMP_AGENT
+        snmp_oid: .1.3.6.1.4.1.41263.10.1.9.{#SNMPINDEX}
+        key: nutanix.vm.mem.util[{#SNMPINDEX}]
+        delay: 5m
+        history: 7d
+        units: '%'
+        tags:
+        - tag: component
+          value: vm
+    macros:
+    - macro: '{$NUTANIX.CLUSTER.STATUS.OK}'
+      value: started
+      description: clusterStatus icin beklenen deger (snmpget ile dogrulayin).
+    - macro: '{$NUTANIX.CVM.STATUS.OK}'
+      value: ^up
+      description: CVM/servis durumu icin regex (buyuk/kucuk harf duyarsiz).
+    - macro: '{$NUTANIX.NODATA.TIMEOUT}'
+      value: 15m
+    - macro: '{$NUTANIX.STORAGE.USED.WARN}'
+      value: '80'
+    - macro: '{$NUTANIX.STORAGE.USED.HIGH}'
+      value: '90'
+    - macro: '{$NUTANIX.DISK.USED.WARN}'
+      value: '90'
+    - macro: '{$NUTANIX.HV.CPU.WARN}'
+      value: '90'
+    - macro: '{$NUTANIX.HV.MEM.WARN}'
+      value: '90'
+    tags:
+    - tag: class
+      value: hardware
+    - tag: target
+      value: nutanix
+  triggers:
+  - uuid: 7957d30e11e64b8a823b694aea13e35f
+    expression: nodata(/Nutanix by SNMPv3/nutanix.cluster.status,{$NUTANIX.NODATA.TIMEOUT})=1
+    name: 'Nutanix: No SNMP data for {$NUTANIX.NODATA.TIMEOUT}'
+    priority: HIGH
+    description: SNMPv3 erisimi, kimlik bilgileri veya Prism SNMP servisi kontrol edilmeli.
+  - uuid: 4a23f2cfcf0e42de875d94795e950338
+    expression: last(/Nutanix by SNMPv3/nutanix.cluster.status)<>"{$NUTANIX.CLUSTER.STATUS.OK}"
+    name: 'Nutanix: Cluster status is not "{$NUTANIX.CLUSTER.STATUS.OK}"'
+    priority: HIGH
+  - uuid: 5fb326dbf7a44c428bb301362b4bbd48
+    expression: last(/Nutanix by SNMPv3/nutanix.cluster.storage.used.pct)>{$NUTANIX.STORAGE.USED.WARN} and last(/Nutanix by SNMPv3/nutanix.cluster.storage.used.pct)<={$NUTANIX.STORAGE.USED.HIGH}
+    name: 'Nutanix: Cluster storage usage is high (>{$NUTANIX.STORAGE.USED.WARN}%)'
+    priority: WARNING
+  - uuid: 57980cdc3de441948368af13b6db2a64
+    expression: last(/Nutanix by SNMPv3/nutanix.cluster.storage.used.pct)>{$NUTANIX.STORAGE.USED.HIGH}
+    name: 'Nutanix: Cluster storage usage is critical (>{$NUTANIX.STORAGE.USED.HIGH}%)'
+    priority: HIGH
+  - uuid: 5118f2d2cd9e49498d876bfb05b68a95
+    expression: change(/Nutanix by SNMPv3/nutanix.cluster.version)=1
+    name: 'Nutanix: Cluster version has changed'
+    priority: INFO
+    manual_close: 'YES'
